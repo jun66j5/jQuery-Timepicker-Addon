@@ -842,6 +842,7 @@ $.extend(Timepicker.prototype, {
 
 		this.formattedDateTime = formattedDateTime;
 
+		var range = getSelectionRange(this);
 		if(!this._defaults.showTimepicker) {
 			this.$input.val(this.formattedDate);
 		} else if (this.$altInput && this._defaults.altFieldTimeOnly === true) {
@@ -853,6 +854,7 @@ $.extend(Timepicker.prototype, {
 		} else {
 			this.$input.val(formattedDateTime);
 		}
+		restoreSelectionRange(this, range);
 
 		this.$input.trigger("change");
 	}
@@ -1085,10 +1087,12 @@ $.datepicker._selectDate = function (id, dateStr) {
 		tp_inst = this._get(inst, 'timepicker');
 
 	if (tp_inst) {
+		var range = getSelectionRange(inst);
 		tp_inst._limitMinMaxDateTime(inst, true);
 		inst.inline = inst.stay_open = true;
 		//This way the onSelect handler called from calendarpicker get the full dateTime
 		this._base_selectDate(id, dateStr);
+		setSelectionRange(inst, range);
 		inst.inline = inst.stay_open = false;
 		this._notifyChange(inst);
 		this._updateDatepicker(inst);
@@ -1194,11 +1198,13 @@ $.datepicker._base_gotoToday = $.datepicker._gotoToday;
 $.datepicker._gotoToday = function(id) {
 	var inst = this._getInst($(id)[0]),
 		$dp = inst.dpDiv;
+	var range = getSelectionRange(inst);
 	this._base_gotoToday(id);
 	var tp_inst = this._get(inst, 'timepicker');
 	selectLocalTimeZone(tp_inst);
 	var now = new Date();
 	this._setTime(inst, now);
+	restoreSelectionRange(this, range);
 	$( '.ui-datepicker-today', $dp).click();
 };
 
@@ -1512,6 +1518,31 @@ var selectLocalTimeZone = function(tp_inst, date)
 			tzoffset = tzoffset.substring(0, 3) + ':' + tzoffset.substring(3);
         }
 		tp_inst.timezone_select.val(tzoffset);
+	}
+};
+
+//#######################################################################################
+// Helper functions to retreive selection range and restore selection range
+//#######################################################################################
+var getSelectionRange = function(tp_inst)
+{
+	var range = {};
+	range.input = {
+		'selectionStart': tp_inst.$input.prop('selectionStart'),
+		'selectionEnd': tp_inst.$input.prop('selectionEnd')};
+	if (tp_inst.$altInput) {
+		range.altInput = {
+			'selectionStart': tp_inst.$altInput.prop('selectionStart'),
+			'selectionEnd': tp_inst.$altInput.prop('selectionEnd')};
+	}
+	return range;
+};
+
+var restoreSelectionRange = function(tp_inst, range)
+{
+	tp_inst.$input.prop(range.input);
+	if (range.altInput !== undefined) {
+		tp_inst.$altInput.prop(range.altInput);
 	}
 };
 
